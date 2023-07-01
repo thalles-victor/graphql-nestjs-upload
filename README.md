@@ -1,73 +1,243 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Upload de arquivos com Nestjs e Graphql
+Para iniciar com esse projeto é nessário que já tenha integrado o graphql com o nestjs. Caso ainda não tenha, você pode fazer dessa forma seguindo os passo a passo na [documentação do nestjs no módulo de Graphql](https://docs.nestjs.com/graphql/quick-start), lembrando que nesse projeto eu estou ultilizando o code-first. Para este projeto também estou ultilizando o prisma, mas isso é uma escolha mesmo por ele ser mais símples, o que fica a cardo de vocês decidirem qual usar.
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Instalação das dependências
+Para fazer o upload dos arquivos é necessário que tenha a biblioteca [graphql-upload](https://www.npmjs.com/package/graphql-upload) que é um middleware e um scalar type para trabalhar com upload de arquivos com graphql semelhante ao multer para rest api.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
-
-```bash
-$ npm install
+```console
+npm i graphql-upload
 ```
 
-## Running the app
+### Configurações no projeto
 
-```bash
-# development
-$ npm run start
+Adicionar as seguintes informações no [tsconfig.json](./tsconfig.json).
 
-# watch mode
-$ npm run start:dev
+```json
+"module": "Node16",  //"node16" ou "nodenext".
+"allowJs": true,
+"maxNodeModuleJsDepth": 0
+```
+informações disponível em: https://github.com/jaydenseric/graphql-upload#requirements.
 
-# production mode
-$ npm run start:prod
+
+### Aplicando o middleware
+No arquivo [main.ts](./src/main.ts) temos que aplicar o middleware da biblioteca graphql-upload. Para conseguir importar, ultilizei o conceito de dynamic imports, caso queira saber mais recomendo ler o artigo: https://javascript.info/modules-dynamic-imports
+
+```ts
+  const { default: graphqlUploadExpress } = await import(
+    'graphql-upload/graphqlUploadExpress.mjs'
+  );
+  app.use(graphqlUploadExpress({ maxFileSize: 5000000, maxFiles: 10 }));
 ```
 
-## Test
+## Iniciando o desenvolvimento do projeto
 
-```bash
-# unit tests
-$ npm run test
+### Criando a entidade do projeto
+Como em qualquer projeto, o que eu sempre gosto de começar a fazer é criar as entidades pois é ela é a forma em que vamos moldar as informações. Para isso criei uma entdiade (Object Type para o GraphQL)  que vai representar nossa entidade gato. Também já apliquei os decorators do graphql para representalo como um object type.
 
-# e2e tests
-$ npm run test:e2e
+[cat.entity.ts](./src/cats/entities/cat.entity.ts)
+```ts
+import { ObjectType, Field } from '@nestjs/graphql';
+import { v4 as uuid_v4 } from 'uuid';
 
-# test coverage
-$ npm run test:cov
+interface CatEntityProps {
+  name: string;
+  breed: string;
+  image: string;
+}
+
+@ObjectType()
+export class CatEntity {
+  @Field()
+  id: string;
+
+  @Field(() => String)
+  name: string;
+
+  @Field(() => String)
+  breed: string;
+
+  @Field(() => String)
+  image: string;
+
+  @Field(() => Date)
+  created_at: Date;
+
+  constructor({ name, breed, image }: CatEntityProps) {
+    this.id = uuid_v4();
+    this.name = name;
+    this.breed = breed;
+    this.image = image;
+    this.created_at = new Date();
+  }
+}
+
 ```
 
-## Support
+### Criando o tipo File upload para tiparmos o arquivo vindo do client.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Com esse tipo vamos consegui tipar o arquivo; no nosso caso imagem, para comseguirmos tratar os a stream vinda do usuário.
 
-## Stay in touch
+[FileUload.ts](./src/%40Types/FileUpload.ts)
+```ts
+import { Stream } from 'stream';
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+export interface FileUpload {
+  filename: string;
+  mimetype: string;
+  encoding: string;
+  createReadStream: () => Stream;
+}
+```
 
-## License
+### Crinado o Input Type da criação do gato
 
-Nest is [MIT licensed](LICENSE).
+A criação do input type é da mesma forma tradicional só que com a diferença que estamos utilizando no campo **image** o tipo para o typescript que ele é a promessa de uma arquivo, e para o tipo do grapqhl que ele é um campo que tem o tipo de um GraphQLUpload que é um Scalar Type que veio da lib graphql-upload. Perceba que novamente eu ultilizei recurso de imports dynamics para importar o GraphQLUpload.
+
+```ts
+import { InputType, Field } from '@nestjs/graphql';
+import { FileUpload } from 'src/@Types/FileUpload';
+import { GraphQLScalarType } from 'graphql';
+
+let GraphQLUpload: GraphQLScalarType;
+
+import('graphql-upload/GraphQLUpload.mjs').then(({ default: Upload }) => {
+  GraphQLUpload = Upload;
+});
+
+@InputType()
+export class CreateCatInput {
+  @Field(() => String)
+  name: string;
+
+  @Field(() => String)
+  breed: string;
+
+  @Field(() => GraphQLUpload)
+  image: Promise<FileUpload>;
+}
+```
+
+## Salvando a os dados no servidor
+Agora que já criamos os tipos e a estrutura da entidade chegou a hora de crirar os módulos que vão tratar da persistência no servidor.
+
+Para tratar o salvamento da imagen criei uma função que primeiro vai estruturar o nome da imagen, pois queremos que ela seja única para não ter conflito com outras imagens, logo em seguida ela vai receber a responsabilidade de salvar a imagen no disco e passar os dados para o nosso serviço de repositório onde vai persistir as informações.
+
+[cats.service.ts](./src/cats/cats.service.ts)
+```ts
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { CreateCatInput } from './dto/create-cat.input';
+import fs from 'fs';
+import { join } from 'path';
+import { PrismaService } from 'src/infra/prisma.service';
+import { CatEntity } from './entities/cat.entity';
+import { v4 as uuid_v4 } from 'uuid';
+
+@Injectable()
+export class CatsService {
+  constructor(private readonly prismaService: PrismaService) {}
+
+  async create({ breed, name, image }: CreateCatInput) {
+    const { createReadStream, filename } = await image;
+
+    const [image_title, image_extension] = filename.split('.');
+
+    const imageInformation = {
+      id: uuid_v4(),
+      title: image_title,
+      extension: image_extension,
+    };
+
+    const structure_image_name = `${imageInformation.title}-${imageInformation.id}.${imageInformation.extension}`;
+
+    //Saving image in disk
+    new Promise(async (resolve) => {
+      createReadStream()
+        .pipe(
+          fs.createWriteStream(
+            join(process.cwd(), `/src/upload/${structure_image_name}`),
+          ),
+        )
+        .on(
+          'finish',
+          () => resolve, //When resolve he return this information in promise, but I didn't not use.
+        )
+        .on('error', (error) => {
+          console.log(error);
+
+          throw new HttpException(
+            'Could not save image',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        });
+    });
+
+    //Create Entity before save in database
+    const catEntity = new CatEntity({
+      name: name,
+      breed: breed,
+      image: structure_image_name,
+    });
+
+    //Saving then entity in database
+    const catCreated = await this.prismaService.cat.create({
+      data: catEntity,
+    });
+
+    //Send Cat back, but change cat image passing the application's domain
+    return {
+      ...catCreated,
+      image: `http://localhost:3000/public/assets/${catCreated.image}`,
+    };
+  }
+}
+```
+
+agora que já temos uma função no nosso serviço que vai tratar de salvar a imagen e também de enviar as informações para que o repositório salve no banco, vamos criar a o resolver que vai receber esses dados vindos do client. Basicamente o que fazemos é criar uma *mutation* que o tipo dela é o [CatEntity](./src/cats/entities/cat.entity.ts) chamada de createCat que vai receber um parâmetro createCatInput em que o tipo dele é o nosso [CreateCatInput](./src/cats/dto/create-cat.input.ts).
+
+[cats.resolver.ts](./src/cats/cats.resolver.ts)
+```ts
+import { Resolver, Mutation, Args } from '@nestjs/graphql';
+import { CatsService } from './cats.service';
+import { CatEntity } from './entities/cat.entity';
+import { CreateCatInput } from './dto/create-cat.input';
+
+@Resolver()
+export class CatsResolver {
+  constructor(private readonly catsService: CatsService) {}
+
+  @Mutation(() => CatEntity)
+  async createCat(@Args('createCatInput') createCatInput: CreateCatInput) {
+    return await this.catsService.create(createCatInput);
+  }
+}
+```
+## Testando a aplicação
+Em fim cheamos a hora de testar a aplicação para isso não vamos utilizar o playground do apollo mas sim outro client que é o [Altair](https://altairgraphql.dev/), ele possui mais recursos que o apollo e um deles é a possibilidade de fazer upload de arquivos.
+
+![](./GitHubAssets/create-cat-example.gif)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { CatsService } from './cats.service';
 import { CatEntity } from './entities/cat.entity';
 import { CreateCatInput } from './dto/create-cat.input';
