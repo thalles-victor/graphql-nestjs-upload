@@ -1,8 +1,11 @@
 # Upload de arquivos com Nestjs e Graphql
+
+> Caso queira [um vídeo explicando em detalhes](https://www.linkedin.com/posts/thalles-v%C3%ADctor_nestjs-graphql-nestjs-activity-7076179915573796865-b5Ap), aproveite e me segue lá no linkedin.
+
 Para iniciar com esse projeto é nessário que já tenha integrado o graphql com o nestjs. Caso ainda não tenha, você pode fazer dessa forma seguindo os passo a passo na [documentação do nestjs no módulo de Graphql](https://docs.nestjs.com/graphql/quick-start), lembrando que nesse projeto eu estou ultilizando o code-first. Para este projeto também estou ultilizando o prisma, mas isso é uma escolha mesmo por ele ser mais símples, o que fica a cardo de vocês decidirem qual usar.
 
 ## Instalação das dependências
-Para fazer o upload dos arquivos é necessário que tenha a biblioteca [graphql-upload](https://www.npmjs.com/package/graphql-upload) que é um middleware e um scalar type para trabalhar com upload de arquivos com graphql semelhante ao multer para rest api.
+Para fazer o upload dos arquivos é necessário que tenha a biblioteca [graphql-upload](https://www.npmjs.com/package/graphql-upload) que contêm um middleware e um scalar type que vamos utilizar para trabalhar com upload de arquivos no graphl com o nestjs, semelhantemente ao multer para rest api.
 
 ```console
 npm i graphql-upload
@@ -218,26 +221,46 @@ Em fim cheamos a hora de testar a aplicação para isso não vamos utilizar o pl
 ![](./GitHubAssets/create-cat-example.gif)
 
 
+## Implementando static assets no servidor
 
+Para que outros clients consigam acessar os arquivos do nosso servidor devemos habilitar usando os static assets e para fazer isso no nest devemos tipar o generic da funcão create com o **NestjsExpressApplication** e depois usar o **useStaticAssets** do app passando o caminho e o prefixo para acessar a url.
 
+```ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  app.useStaticAssets(join(process.cwd(), 'src', 'upload'), {
+    prefix: '/public/assets',
+  });
 
+  ...
+}
+bootstrap();
+```
 
+Para testar basta acessar o navegador com a url da imagen.
 
+![](./GitHubAssets/static-assets.png)
 
+## Opcional
+Caso queiram desabilitar contra ataques CSRF basta ir no [app.module.ts](./src/app.module.ts) e colocar a **csrfPrevention** para ***false***
 
+```ts
+@Module({
+  imports: [
+    ...
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      ...
+      csrfPrevention: false, //optional
+    }),
+  ],
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+  ...
+})
+export class AppModule {}
+```
