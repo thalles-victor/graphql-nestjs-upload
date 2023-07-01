@@ -218,7 +218,7 @@ export class CatsResolver {
 ## Testando a aplicação
 Em fim cheamos a hora de testar a aplicação para isso não vamos utilizar o playground do apollo mas sim outro client que é o [Altair](https://altairgraphql.dev/), ele possui mais recursos que o apollo e um deles é a possibilidade de fazer upload de arquivos.
 
-![](./GitHubAssets/create-cat-example.gif)
+![carregando gif de teste...](./GitHubAssets/create-cat-example.gif)
 
 
 ## Implementando static assets no servidor
@@ -245,10 +245,10 @@ bootstrap();
 
 Para testar basta acessar o navegador com a url da imagen.
 
-![](./GitHubAssets/static-assets.png)
+![carregando imagen de demonstração...](./GitHubAssets/static-assets.png)
 
-## Opcional
-Caso queiram desabilitar contra ataques CSRF basta ir no [app.module.ts](./src/app.module.ts) e colocar a **csrfPrevention** para ***false***
+## Desabilitando o CSRF Prevention (Opcional)
+Caso queiram desabilitar contra ataques CSRF basta ir no [app.module.ts](./src/app.module.ts) e colocar a **csrfPrevention** para ***false***. Depois disso não vai ser necessário passar nos Headers da requisição a flag **apollo-require-preflight**. Para mais informações sobre CSRF com Apollo server disponível em: https://www.apollographql.com/docs/apollo-server/security/cors/#preventing-cross-site-request-forgery-csrf
 
 ```ts
 @Module({
